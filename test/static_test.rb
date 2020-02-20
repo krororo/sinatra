@@ -151,9 +151,44 @@ class StaticTest < Minitest::Test
     assert_valid_range("bytes=-999999", (0..length-1), path, file)
   end
 
+  it 'handle valid byte multi-range correctly' do
+    request = Rack::MockRequest.new(@app)
+    response = request.get("/#{File.basename(__FILE__)}", 'HTTP_RANGE' => 'bytes=1-2,3-4')
+    length = File.read(__FILE__).length
+
+    assert_equal(
+      206,
+      response.status,
+      "Should be HTTP/1.1 206 Partial content"
+    )
+    assert_equal(
+      'multipart/byteranges; boundary=AaB03x',
+      response['Content-Type'],
+      "Should be multipart/byteranges Content-Type"
+    )
+    expected_body = <<-BODY
+\r
+--AaB03x\r
+Content-Type: text/x-script.ruby\r
+Content-Range: bytes 1-2/#{length}\r
+\r
+eq\r
+--AaB03x\r
+Content-Type: text/x-script.ruby\r
+Content-Range: bytes 3-4/#{length}\r
+\r
+ui\r
+--AaB03x--\r
+    BODY
+    assert_equal(
+      expected_body,
+      response.body,
+      "Unexpected response data for bytes=1-2,3-4"
+    )
+  end
+
   it 'correctly ignores syntactically invalid range requests' do
-    # ...and also ignores multi-range requests, which aren't supported yet
-    ["bytes=45-40", "bytes=IV-LXVI", "octets=10-20", "bytes=-", "bytes=1-2,3-4"].each do |http_range|
+    ["bytes=45-40", "bytes=IV-LXVI", "octets=10-20", "bytes=-"].each do |http_range|
       request = Rack::MockRequest.new(@app)
       response = request.get("/#{File.basename(__FILE__)}", 'HTTP_RANGE' => http_range)
 
