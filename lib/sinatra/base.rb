@@ -1526,7 +1526,8 @@ module Sinatra
         # behavior, by ensuring an instance exists:
         prototype
         # Run the instance we created:
-        handler.run(self, server_settings) do |server|
+        m = handler.method(:run)
+        block = proc do |server|
           unless suppress_messages?
             $stderr.puts "== Sinatra (v#{Sinatra::VERSION}) has taken the stage on #{port} for #{environment} with backup from #{handler_name}"
           end
@@ -1537,6 +1538,11 @@ module Sinatra
           server.threaded = settings.threaded if server.respond_to? :threaded=
 
           yield server if block_given?
+        end
+        if m.parameters.last[0] == :keyrest
+          handler.run(self, **server_settings, &block)
+        else
+          handler.run(self, server_settings, &block)
         end
       end
 
