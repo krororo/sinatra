@@ -24,7 +24,6 @@ group :development, :test do
 
   platform :ruby do
     gem 'execjs', '2.0.0'
-    gem 'nokogiri', '1.5.10'
     gem 'redcarpet', '2.3.0'
     gem 'yajl-ruby'
     # ref is a dependency of therubyracer
